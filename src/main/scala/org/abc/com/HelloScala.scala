@@ -15,6 +15,7 @@ object HelloScala {
     val dirSrcPath = "src/main/resources/data-spark"
     val dirDestPath = "/tmp/data-spark"
 
+//creation of the spark session
     val sparkSession = SparkSession.builder()
       .appName("example-spark-scala-read-and-write-from-hdfs")
       .master("local[*]")
@@ -24,22 +25,22 @@ object HelloScala {
       .getOrCreate()
 
     val dirOne = new File("src/main/resources/data-spark")
-    val listOfFiles = dirOne.listFiles
+    val listOfFiles = dirOne.listFiles    //create a list with the files on the directory
       .filter(_.isFile)
       .toList
 
     import sparkSession.sql
 
-
+    //for loop in order to retrieve each file
     for (file <- listOfFiles) {
       val tableName: String = file.getName.substring(0, file.getName.indexOf("."))
       val df_csv = sparkSession.read.option("inferSchema", "true").csv(dirSrcPath + "/" + file.getName)
-      df_csv.write.mode(SaveMode.Overwrite).csv(dirDestPath + "/" + tableName)
+      df_csv.write.mode(SaveMode.Overwrite).csv(dirDestPath + "/" + tableName)//write the csv files on hdfs
       sql("DROP TABLE IF EXISTS " + tableName)
-      df_csv.write.mode(SaveMode.Overwrite) saveAsTable (tableName)
+      df_csv.write.mode(SaveMode.Overwrite) saveAsTable (tableName)//create the table on Hive for each CSV file
     }
 
-
+ //implementet the query for retrive the agregate information
     val dataFrameAgregate = sql("SELECT d._c0 as DriverId, d._c1 as Name, t.Hours_Logged, t.Miles_Logged from drivers d " +
       "INNER JOIN (SELECT _c0, sum(`_c2`) as Hours_Logged , sum(`_c3`) as Miles_Logged FROM timesheet GROUP BY _c0 ) t ON (d._c0 = t._c0)")
 
